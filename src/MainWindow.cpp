@@ -152,6 +152,24 @@ void MainWindow::connectSignals() {
             pianoWidget, &PianoKeyboardWidget::releaseKey);
 }
 
+void MainWindow::onResyncNotes(qint64 position)
+{
+    // 1. Сбросить все клавиши
+    for (int note = 21; note <= 108; ++note) {
+        pianoWidget->releaseKey(note);
+    }
+
+    // 2. Включить те, что должны звучать сейчас
+    const auto &notes = midiPlayer->getNotes();
+    for (const auto &n : notes) {
+        qint64 start = n.startTime;
+        qint64 end   = n.startTime + n.duration;
+        if (position >= start && position < end) {
+            pianoWidget->pressKey(n.pitch);
+        }
+    }
+}
+
 void MainWindow::onOpenMidiFile() {
     QString fileName = QFileDialog::getOpenFileName(this,
         "Открыть MIDI файл", "",
@@ -167,18 +185,9 @@ void MainWindow::onOpenMidiFile() {
 }
 
 void MainWindow::onPlay() {
-
     midiPlayer->play();
     btnPlay->setEnabled(false);
     btnPause->setEnabled(true);
-
-    // ТЕСТ: подсветить среднее до (MIDI 60) на 1 секунду
-    if (pianoWidget) {
-        pianoWidget->pressKey(60);
-        QTimer::singleShot(1000, this, [this]() {
-            pianoWidget->releaseKey(60);
-        });
-    }
 }
 
 void MainWindow::onPause() {
@@ -194,9 +203,13 @@ void MainWindow::onStop() {
     btnStop->setEnabled(false);
 }
 
-void MainWindow::onSliderMoved(int position) {
+void MainWindow::onSliderMoved(int position)
+{
     midiPlayer->setPosition(position);
+    onResyncNotes(position);   // вызываем слот напрямую
 }
+
+
 
 void MainWindow::onPositionChanged(qint64 position) {
     int seconds = position / 1000;

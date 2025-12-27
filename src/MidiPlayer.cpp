@@ -21,14 +21,24 @@ MidiPlayer::~MidiPlayer() {
 
 bool MidiPlayer::loadFile(const QString &filePath) {
     if (parser->parseFile(filePath)) {
-        totalDuration = parser->getDuration();
+        const auto &notes = parser->getNotes();
+        qDebug() << "Loaded MIDI notes:" << notes.size();
+        if (!notes.isEmpty()) {
+            qDebug() << "First note pitch/start/duration(ms):"
+                     << notes[0].pitch
+                     << notes[0].startTime
+                     << notes[0].duration;
+        }
+
+        totalDuration   = parser->getDuration();
         currentPosition = 0;
-        eventIndex = 0;
+        eventIndex      = 0;
+        noteIndex       = 0;
         emit durationChanged(totalDuration);
         emit fileLoaded(QFileInfo(filePath).fileName());
         return true;
     }
-    
+
     emit error("Ошибка при загрузке MIDI файла: " + filePath);
     return false;
 }
@@ -55,16 +65,31 @@ void MidiPlayer::stop() {
     playbackTimer->stop();
     currentPosition = 0;
     eventIndex = 0;
+    noteIndex  = 0;
     emit positionChanged(0);
     emit playbackStopped();
 }
 
-void MidiPlayer::setPosition(qint64 position) {
-    if (position >= 0 && position <= totalDuration) {
-        currentPosition = position;
-        emit positionChanged(currentPosition);
+void MidiPlayer::setPosition(qint64 position)
+{
+    if (!parser || !parser->isLoaded())
+        return;
+
+    if (position < 0)
+        position = 0;
+    if (position > totalDuration)
+        position = totalDuration;
+
+    currentPosition = position;
+    emit positionChanged(currentPosition);
+
+    const auto &notes = parser->getNotes();
+    noteIndex = 0;
+    while (noteIndex < notes.size() && notes[noteIndex].startTime < currentPosition) {
+        ++noteIndex;
     }
 }
+
 
 void MidiPlayer::setTempo(int bpm) {
     currentTempo = bpm;
@@ -75,6 +100,7 @@ void MidiPlayer::onTimerTick()
     if (!isPlaying || !parser || !parser->isLoaded())
         return;
 
+    // Темп: пока будем считать, что currentTempo масштабирует время
     int baseTempo = 120;
     double tempoFactor = static_cast<double>(currentTempo) / static_cast<double>(baseTempo);
 
@@ -88,23 +114,38 @@ void MidiPlayer::onTimerTick()
 
     emit positionChanged(currentPosition);
 
-    const auto &events = parser->getEvents();
-    if (eventIndex < 0 || eventIndex >= events.size())
+    const auto &notes = parser->getNotes();
+    if (notes.isEmpty())
         return;
 
-    while (eventIndex < events.size()) {
-        const auto &ev = events[eventIndex];
+    // 1) Включаем ноты, старт которых <= currentPosition
+    while (noteIndex < notes.size()) {
+        const auto &n = notes[noteIndex];
 
-        // ev.time уже в миллисекундах
-        if (ev.time > currentPosition)
+        if (n.startTime > currentPosition)
             break;
 
-        if (ev.type == 0x90 && ev.data2 > 0) {            // Note On
-            emit noteOn(static_cast<int>(ev.data1), static_cast<int>(ev.data2));
-        } else if (ev.type == 0x80 || (ev.type == 0x90 && ev.data2 == 0)) { // Note Off
-            emit noteOff(static_cast<int>(ev.data1));
-        }
-
-        ++eventIndex;
+        // Старт ноты
+        emit noteOn(static_cast<int>(n.pitch), static_cast<int>(n.velocity));
+        ++noteIndex;
     }
+
+    // 2) Гасим ноты, у которых закончилась длительность
+    //    Проходим по всем нотам и выключаем те, что уже должны быть Off.
+    //    (Оптимизация потом; пока можно O(N) — у тебя записи не гигантские.)
+    for (const auto &n : notes) {
+        qint64 endTime = n.startTime + n.duration;
+        // небольшая «задержка» (5 ms), чтобы не мигали от неточностей
+        if (endTime <= currentPosition && endTime > currentPosition - deltaMs) {
+            emit noteOff(static_cast<int>(n.pitch));
+        }
+    }
+}
+
+const QVector<MidiNote>& MidiPlayer::getNotes() const
+{
+    static QVector<MidiNote> empty;
+    if (!parser || !parser->isLoaded())
+        return empty;
+    return parser->getNotes();
 }

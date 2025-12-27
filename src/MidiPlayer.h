@@ -6,7 +6,7 @@
 #include <QTimer>
 #include <memory>
 
-class MidiParser;
+#include "MidiParser.h"   // здесь объявлен MidiNote
 
 class MidiPlayer : public QObject {
     Q_OBJECT
@@ -14,13 +14,16 @@ class MidiPlayer : public QObject {
 public:
     explicit MidiPlayer(QObject *parent = nullptr);
     ~MidiPlayer();
-    
+
     bool loadFile(const QString &filePath);
     void play();
     void pause();
     void stop();
     void setPosition(qint64 position);
     void setTempo(int bpm);
+
+    // Геттер обёртка:
+    const QVector<MidiNote>& getNotes() const;
 
 signals:
     void positionChanged(qint64 position);
@@ -39,13 +42,14 @@ private slots:
 private:
     std::unique_ptr<MidiParser> parser;
     QTimer *playbackTimer;
-    
+
     qint64 currentPosition;
     qint64 totalDuration;
     bool isPlaying;
     int currentTempo;
 
     int eventIndex = 0;
+    int noteIndex  = 0;
 };
 
 #endif // MIDIPLAYER_H

@@ -132,21 +132,26 @@ void PianoKeyboardWidget::resizeEvent(QResizeEvent *event)
 
 void PianoKeyboardWidget::pressKey(int midiNote)
 {
+    bool found = false;
     for (Key &k : whiteKeys) {
         if (k.midiNote == midiNote) {
             k.pressed = true;
-            update();
-            return;
+            found = true;
         }
     }
     for (Key &k : blackKeys) {
         if (k.midiNote == midiNote) {
             k.pressed = true;
-            update();
-            return;
+            found = true;
         }
     }
+    if (found) {
+        update();
+    } else {
+        qDebug() << "PianoKeyboardWidget: key not found" << midiNote;
+    }
 }
+
 
 void PianoKeyboardWidget::releaseKey(int midiNote)
 {

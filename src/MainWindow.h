@@ -25,6 +25,7 @@ private slots:
     void onPositionChanged(qint64 position);
     void onDurationChanged(qint64 duration);
     void onTempoChanged(int value);
+    void onResyncNotes(qint64 position);
 
 private:
     void setupUI();

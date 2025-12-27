@@ -15,6 +15,16 @@ find_package(Qt6 REQUIRED COMPONENTS
     Widgets
     Multimedia
 )
+# --- midifile (third_party) ---
+set(MIDIFILE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/midifile)
+
+set(MIDIFILE_SOURCES
+    ${MIDIFILE_DIR}/src/MidiFile.cpp
+    ${MIDIFILE_DIR}/src/MidiEvent.cpp
+    ${MIDIFILE_DIR}/src/MidiEventList.cpp
+    ${MIDIFILE_DIR}/src/MidiMessage.cpp
+    ${MIDIFILE_DIR}/src/Binasc.cpp
+)
 
 # Источники проекта
 set(PROJECT_SOURCES
@@ -59,6 +69,11 @@ target_include_directories(PianoPlatform PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/rtmidi
+)
+
+target_sources(PianoPlatform PRIVATE ${MIDIFILE_SOURCES})
+target_include_directories(PianoPlatform PRIVATE
+    ${MIDIFILE_DIR}/include
 )
 
 # Оптимизация Release сборки
