@@ -120,11 +120,21 @@ void MainWindow::setupUI() {
     
     mainLayout->addLayout(instrumentLayout);
     
-    // === ОБЛАСТЬ ДЛЯ ВИЗУАЛИЗАЦИИ КЛАВИШ ===
-    pianoWidget = new PianoKeyboardWidget(this);
-    mainLayout->addWidget(pianoWidget);
+    // === PIANO ROLL ===
+    pianoRoll = new PianoRollWidget(this);
+    pianoRoll->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    pianoRoll->setMinimumHeight(300);
+    mainLayout->addWidget(pianoRoll, /*stretch*/ 4);   // большее растяжение
 
-    
+    // === КЛАВИАТУРА ===
+    pianoWidget = new PianoKeyboardWidget(this);
+    pianoWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    pianoWidget->setMinimumHeight(120);
+    mainLayout->addWidget(pianoWidget, /*stretch*/ 0);
+
+    // Связь
+    pianoRoll->setKeyboard(pianoWidget);
+
     // === СТАТУС БАР ===
     QLabel *statusLabel = new QLabel("Готово", this);
     statusLabel->setStyleSheet("color: #27ae60; padding: 5px;");
@@ -182,6 +192,8 @@ void MainWindow::onOpenMidiFile() {
             sliderPosition->setEnabled(true);
         }
     }
+
+    pianoRoll->setNotes(midiPlayer->getNotes());
 }
 
 void MainWindow::onPlay() {
@@ -209,8 +221,6 @@ void MainWindow::onSliderMoved(int position)
     onResyncNotes(position);   // вызываем слот напрямую
 }
 
-
-
 void MainWindow::onPositionChanged(qint64 position) {
     int seconds = position / 1000;
     int minutes = seconds / 60;
@@ -223,6 +233,8 @@ void MainWindow::onPositionChanged(qint64 position) {
     lblCurrentTime->setText(QString("%1:%2")
         .arg(minutes, 2, 10, QChar('0'))
         .arg(seconds, 2, 10, QChar('0')));
+
+    pianoRoll->setCurrentTime(position);
 }
 
 void MainWindow::onDurationChanged(qint64 duration) {

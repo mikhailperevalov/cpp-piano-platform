@@ -8,6 +8,7 @@
 #include <QComboBox>
 #include "MidiPlayer.h"
 #include "PianoKeyboardWidget.h"
+#include "PianoRollWidget.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -32,7 +33,9 @@ private:
     void connectSignals();
 
     MidiPlayer *midiPlayer;
+
     PianoKeyboardWidget *pianoWidget;
+    PianoRollWidget     *pianoRoll;
     
     // UI элементы
     QPushButton *btnOpenFile;

@@ -2,3 +2,4 @@
 #include "UVLADIE3JM/moc_MainWindow.cpp"
 #include "UVLADIE3JM/moc_MidiPlayer.cpp"
 #include "UVLADIE3JM/moc_PianoKeyboardWidget.cpp"
+#include "UVLADIE3JM/moc_PianoRollWidget.cpp"

@@ -13,6 +13,7 @@ public:
     // MIDI ноты: 21 (A0) .. 108 (C8)
     void pressKey(int midiNote);
     void releaseKey(int midiNote);
+    QRect keyRect(int midiNote) const;
 
 protected:
     void paintEvent(QPaintEvent *event) override;

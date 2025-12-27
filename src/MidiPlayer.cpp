@@ -90,7 +90,6 @@ void MidiPlayer::setPosition(qint64 position)
     }
 }
 
-
 void MidiPlayer::setTempo(int bpm) {
     currentTempo = bpm;
 }

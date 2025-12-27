@@ -170,3 +170,16 @@ void PianoKeyboardWidget::releaseKey(int midiNote)
         }
     }
 }
+
+QRect PianoKeyboardWidget::keyRect(int midiNote) const
+{
+    for (const Key &k : whiteKeys) {
+        if (k.midiNote == midiNote)
+            return k.rect;
+    }
+    for (const Key &k : blackKeys) {
+        if (k.midiNote == midiNote)
+            return k.rect;
+    }
+    return QRect();
+}

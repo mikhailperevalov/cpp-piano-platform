@@ -37,12 +37,16 @@ set(PROJECT_SOURCES
     src/MidiParser.cpp
     src/PianoKeyboardWidget.h
     src/PianoKeyboardWidget.cpp
+    src/PianoRollWidget.h
+    src/PianoRollWidget.cpp
 )
 
 # Исполняемый файл
 add_executable(PianoPlatform ${PROJECT_SOURCES}
     src/PianoKeyboardWidget.h
-    src/PianoKeyboardWidget.cpp)
+    src/PianoKeyboardWidget.cpp
+    src/PianoRollWidget.h
+    src/PianoRollWidget.cpp)
 
 # Qt линки
 target_link_libraries(PianoPlatform PRIVATE 
