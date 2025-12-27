@@ -7,13 +7,101 @@
 #include <QSpinBox>
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent) {
-    
+    : QMainWindow(parent)
+{
     midiPlayer = new MidiPlayer(this);
-    
+
     setupUI();
+
+    QString style = R"(
+        QMainWindow {
+            background-color: #121212;
+            color: #E0E0E0;
+        }
+
+        QLabel {
+            color: #E0E0E0;
+            font-size: 12px;
+        }
+
+        QStatusBar {
+            background-color: #1E1E1E;
+            color: #9E9E9E;
+        }
+
+        QPushButton {
+            background-color: #272727;
+            color: #E0E0E0;
+            border: 1px solid #3A3A3A;
+            border-radius: 4px;
+            padding: 4px 10px;
+        }
+
+        QPushButton:hover {
+            background-color: #333333;
+            border-color: #00BCD4;
+        }
+
+        QPushButton:pressed {
+            background-color: #00BCD4;
+            border-color: #00ACC1;
+            color: #121212;
+        }
+
+        QPushButton:disabled {
+            background-color: #1A1A1A;
+            border-color: #2A2A2A;
+            color: #666666;
+        }
+
+        QSlider::groove:horizontal {
+            height: 4px;
+            background: #2A2A2A;
+            border-radius: 2px;
+        }
+
+        QSlider::handle:horizontal {
+            width: 12px;
+            height: 12px;
+            margin: -4px 0;
+            border-radius: 6px;
+            background: #00BCD4;
+        }
+
+        QSlider::sub-page:horizontal {
+            background: #00BCD4;
+            border-radius: 2px;
+        }
+
+        QComboBox {
+            background-color: #272727;
+            color: #E0E0E0;
+            border: 1px solid #3A3A3A;
+            border-radius: 4px;
+            padding: 2px 6px;
+        }
+
+        QComboBox::drop-down {
+            border: none;
+        }
+
+        QComboBox QListView {
+            background-color: #1E1E1E;
+            color: #E0E0E0;
+            selection-background-color: #00BCD4;
+            selection-color: #121212;
+        }
+
+        QFrame#controlPanel {
+            background-color: #1E1E1E;
+            border-radius: 6px;
+            border: 1px solid #292929;
+        }
+    )";
+
+    setStyleSheet(style);
+
     connectSignals();
-    
     setWindowTitle("Piano Platform v1.0");
     setGeometry(100, 100, 1200, 800);
 }
@@ -27,7 +115,9 @@ void MainWindow::setupUI() {
     setCentralWidget(centralWidget);
     
     QVBoxLayout *mainLayout = new QVBoxLayout(centralWidget);
-    
+    mainLayout->setContentsMargins(8, 8, 8, 8);
+    mainLayout->setSpacing(6);
+
     // === ЗАГОЛОВОК ===
     QLabel *lblTitle = new QLabel("🎹 Piano Platform", this);
     lblTitle->setStyleSheet("font-size: 24px; font-weight: bold; color: #2c3e50;");
@@ -43,44 +133,55 @@ void MainWindow::setupUI() {
     fileLayout->addStretch();
     mainLayout->addLayout(fileLayout);
     
-    // === КНОПКИ УПРАВЛЕНИЯ ===
-    QHBoxLayout *controlsLayout = new QHBoxLayout();
-    
-    btnOpenFile = new QPushButton("📂 Открыть MIDI", this);
-    btnPlay = new QPushButton("▶ Воспроизведение", this);
-    btnPause = new QPushButton("⏸ Пауза", this);
-    btnStop = new QPushButton("⏹ Стоп", this);
-    
-    btnPlay->setEnabled(false);
-    btnPause->setEnabled(false);
-    btnStop->setEnabled(false);
-    
-    controlsLayout->addWidget(btnOpenFile);
-    controlsLayout->addWidget(btnPlay);
-    controlsLayout->addWidget(btnPause);
-    controlsLayout->addWidget(btnStop);
-    controlsLayout->addStretch();
-    
-    mainLayout->addLayout(controlsLayout);
-    
-    // === ПРОГРЕСС БАР ===
-    QHBoxLayout *progressLayout = new QHBoxLayout();
-    
+    // === ПРОГРЕСС БАР (создаём элементы заранее) ===
     lblCurrentTime = new QLabel("00:00", this);
     lblCurrentTime->setMaximumWidth(50);
-    
+
     sliderPosition = new QSlider(Qt::Horizontal, this);
     sliderPosition->setRange(0, 0);
     sliderPosition->setEnabled(false);
-    
+
     lblDuration = new QLabel("00:00", this);
     lblDuration->setMaximumWidth(50);
-    
-    progressLayout->addWidget(lblCurrentTime);
-    progressLayout->addWidget(sliderPosition);
-    progressLayout->addWidget(lblDuration);
-    
-    mainLayout->addLayout(progressLayout);
+
+    // === ПАНЕЛЬ УПРАВЛЕНИЯ ===
+    QFrame *controlPanel = new QFrame(this);
+    controlPanel->setObjectName("controlPanel");
+    QHBoxLayout *controlsLayout = new QHBoxLayout(controlPanel);
+    controlsLayout->setContentsMargins(8, 6, 8, 6);
+    controlsLayout->setSpacing(8);
+
+    // Кнопки
+    btnOpenFile = new QPushButton("📂 Открыть MIDI", controlPanel);
+    btnPlay     = new QPushButton("▶", controlPanel);
+    btnPause    = new QPushButton("⏸", controlPanel);
+    btnStop     = new QPushButton("⏹", controlPanel);
+
+    controlsLayout->addWidget(btnOpenFile);
+    controlsLayout->addSpacing(12);
+    controlsLayout->addWidget(btnPlay);
+    controlsLayout->addWidget(btnPause);
+    controlsLayout->addWidget(btnStop);
+    controlsLayout->addSpacing(16);
+
+    // Слайдер позиции и время
+    controlsLayout->addWidget(sliderPosition, 1);
+    controlsLayout->addSpacing(12);
+    controlsLayout->addWidget(lblCurrentTime);
+    controlsLayout->addWidget(lblDuration);
+
+    mainLayout->addWidget(controlPanel);
+
+    // Можно добавить сюда же слайдер позиции
+    controlsLayout->addWidget(sliderPosition, 1); // растягиваем по ширине
+
+    controlsLayout->addSpacing(12);
+    controlsLayout->addWidget(lblCurrentTime);
+    controlsLayout->addWidget(lblDuration);
+
+    // Добавляем панель в основной layout
+    mainLayout->addWidget(controlPanel);
+
     
     // === ТЕМПО ===
     QHBoxLayout *tempoLayout = new QHBoxLayout();
@@ -218,7 +319,7 @@ void MainWindow::onStop() {
 void MainWindow::onSliderMoved(int position)
 {
     midiPlayer->setPosition(position);
-    onResyncNotes(position);   // вызываем слот напрямую
+    onResyncNotes(position);
 }
 
 void MainWindow::onPositionChanged(qint64 position) {

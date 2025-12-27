@@ -109,17 +109,42 @@ void PianoKeyboardWidget::paintEvent(QPaintEvent *event)
 
     // Белые клавиши
     for (const Key &k : whiteKeys) {
-        p.setPen(Qt::black);
-        p.setBrush(k.pressed ? QColor("#ffcc66") : Qt::white);
-        p.drawRect(k.rect);
+        QLinearGradient grad(k.rect.topLeft(), k.rect.bottomLeft());
+        if (k.pressed) {
+            grad.setColorAt(0.0, QColor("#FFE082")); // светлый сверху
+            grad.setColorAt(1.0, QColor("#FFB300")); // насыщенный снизу
+        } else {
+            grad.setColorAt(0.0, QColor("#FAFAFA"));
+            grad.setColorAt(1.0, QColor("#E0E0E0"));
+        }
+
+        p.setPen(QColor("#444444"));
+        p.setBrush(grad);
+        QRect r = k.rect.adjusted(0, 0, -1, -1); // тонкий разделитель справа
+        p.drawRect(r);
     }
 
     // Чёрные клавиши
     for (const Key &k : blackKeys) {
-        p.setPen(Qt::black);
-        p.setBrush(k.pressed ? QColor("#ff9933") : Qt::black);
-        p.drawRect(k.rect);
+        QLinearGradient grad(k.rect.topLeft(), k.rect.bottomLeft());
+        if (k.pressed) {
+            grad.setColorAt(0.0, QColor("#424242"));
+            grad.setColorAt(1.0, QColor("#00BCD4"));
+        } else {
+            grad.setColorAt(0.0, QColor("#333333"));
+            grad.setColorAt(1.0, QColor("#000000"));
+        }
+
+        p.setPen(Qt::NoPen);
+        p.setBrush(grad);
+        QRect r = k.rect.adjusted(1, 0, -1, -1);
+        p.drawRect(r);
     }
+
+    p.setPen(QColor("#303030"));
+    p.setBrush(Qt::NoBrush);
+    p.drawRect(rect().adjusted(0, 0, -1, -1));
+
 }
 
 

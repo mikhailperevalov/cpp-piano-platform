@@ -37,54 +37,54 @@ void PianoRollWidget::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
     QPainter p(this);
-    p.fillRect(rect(), QColor("#111111"));
-
-    if (m_notes.isEmpty() || !m_keyboard)
-        return;
 
     int w = width();
     int h = height();
 
-    const qint64 windowLength = 8000; // сколько мс видно над клавиатурой
+    // 1) Фон и градиент
+    QLinearGradient bg(0, 0, 0, h);
+    bg.setColorAt(0.0, QColor("#202020"));
+    bg.setColorAt(1.0, QColor("#151515"));
+    p.fillRect(rect(), bg);
+
+    if (m_notes.isEmpty() || !m_keyboard)
+        return;
+
+    const qint64 windowLength = 8000;
     const qint64 tNow = m_currentTimeMs;
 
     p.setRenderHint(QPainter::Antialiasing, false);
 
+    // 2) Цвета для нот
+    QColor mainColor(0, 188, 212);      // #00BCD4
+    QColor nearLineColor(255, 152, 0);  // #FF9800
+
+    // 3) Цикл по нотам
     for (const auto &n : m_notes) {
         qint64 start = n.startTime;
         qint64 end   = n.startTime + n.duration;
 
-        // Ноты, которые полностью «ниже» текущего момента (уже сыграны) — не рисуем
-        if (end <= tNow)
+        if (end <= tNow || start >= tNow + windowLength)
             continue;
 
-        // Ноты, которые начинаются слишком далеко в будущем — тоже не рисуем
-        if (start >= tNow + windowLength)
-            continue;
-
-        // Ограничиваем интервал отображения окном
         qint64 visibleStart = std::max(start, tNow);
         qint64 visibleEnd   = std::min(end,   tNow + windowLength);
 
-        // Время до текущего момента (0 внизу, windowLength наверху)
-        double tToNowStart = double(visibleStart - tNow); // от 0 до windowLength
+        double tToNowStart = double(visibleStart - tNow);
         double tToNowEnd   = double(visibleEnd   - tNow);
 
-        // Преобразуем во вертикальные координаты:
-        // tToNow = 0   → y = h      (у клавиатуры)
-        // tToNow = L   → y = 0      (верх окна)
         auto timeToY = [h, windowLength](double tToNow) {
-            double ratio = tToNow / double(windowLength); // 0..1
-            ratio = std::clamp(ratio, 0.0, 1.0);
+            double ratio = tToNow / double(windowLength);
+            if (ratio < 0.0) ratio = 0.0;
+            if (ratio > 1.0) ratio = 1.0;
             return h - int(ratio * h);
         };
 
-        int yBottom = timeToY(tToNowStart); // ближе к текущему моменту
-        int yTop    = timeToY(tToNowEnd);   // выше, дальше в будущее
+        int yBottom = timeToY(tToNowStart);
+        int yTop    = timeToY(tToNowEnd);
         if (yTop > yBottom)
             std::swap(yTop, yBottom);
 
-        // Горизонталь: совпадает с клавишей
         QRect keyR = m_keyboard->keyRect(n.pitch);
         if (!keyR.isValid())
             continue;
@@ -94,13 +94,20 @@ void PianoRollWidget::paintEvent(QPaintEvent *event)
 
         QRect r(noteX, yTop, noteWidth, yBottom - yTop);
 
+        // 4) Выбор цвета ноты
+        QColor color = mainColor;
+        if (visibleStart <= tNow + 150 && visibleEnd >= tNow) {
+            // нота прямо над клавиатурой
+            color = nearLineColor;
+        }
+
         p.setPen(Qt::NoPen);
-        p.setBrush(QColor(80, 180, 255));
+        p.setBrush(color);
         p.drawRect(r);
     }
 
-    // Линия текущего времени у клавиатуры
-    p.setPen(QPen(Qt::red, 2));
+    // 5) Линия текущего времени (у клавиатуры)
+    p.setPen(QPen(QColor("#FF9800"), 2));
     p.drawLine(0, h - 1, w, h - 1);
 }
 
